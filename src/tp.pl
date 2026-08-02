@@ -83,4 +83,60 @@ test(aura_no_corroborada, [fail]) :- hazanaCorroborada(destruirDemonioAura).
 test(aura_olvido_1460) :- pasoAlOlvido(destruirDemonioAura, 1460).
 test(aura_no_olvido_1440, [fail]) :- pasoAlOlvido(destruirDemonioAura, 1440).
 
+test(lawine_recuerda_reydemonio_1400) :- recuerda(lawine, destruirReyDemonio, 1400).
+test(lawine_no_recuerda_reydemonio_1390, [fail]) :- recuerda(lawine, destruirReyDemonio, 1390).
+test(fern_recuerda_reydemonio_1400) :- recuerda(fern, destruirReyDemonio, 1400).
+
 :- end_tests(tpIntegrador).
+
+% diaFestivo(Pueblo, Hazana, Heroes, Lugar, AnioInicio)
+diaFestivo(weise, destruirReyDemonio, [frieren, himmel, heiter, eisen], ende, 1340).
+
+% estatua(Pueblo, NombreEstatua, Material, AnioConstruccion, Hazana, Heroes, Lugar)
+estatua(auberst, elEquipoDeHeroes, bronce, 1370, destruirReyDemonio, [frieren, himmel, heiter, eisen], ende).
+estatua(auberst, elHeroeDelSur, marmol, 1340, destruirSchlatElOmnisciente, [heroeDelSur], ende).
+
+% mantenimiento(NombreEstatua, Anio)
+mantenimiento(elEquipoDeHeroes, 1400).
+mantenimiento(elEquipoDeHeroes, 1450).
+mantenimiento(elHeroeDelSur, 1410).
+
+limiteBuenEstado(marmol, 30).
+limiteBuenEstado(bronce, 15).
+
+% un "evento de cuidado" de una estatua es su construccion o un mantenimiento
+eventoEstatua(NombreEstatua, Anio) :-
+    estatua(_, NombreEstatua, _, Anio, _, _, _).
+eventoEstatua(NombreEstatua, Anio) :-
+    mantenimiento(NombreEstatua, Anio).
+
+buenEstado(NombreEstatua, AnioConsulta) :-
+    estatua(_, NombreEstatua, Material, _, _, _, _),
+    limiteBuenEstado(Material, Limite),
+    eventoEstatua(NombreEstatua, AnioEvento),
+    AnioEvento =< AnioConsulta,
+    AnioConsulta =< AnioEvento + Limite.
+
+
+conocio(Persona, AnioConocio, Hazana, Heroes, Lugar) :-
+    persona(Persona, _, AnioNacimiento, Pueblo),
+    diaFestivo(Pueblo, Hazana, Heroes, Lugar, AnioInicio),
+    AnioConocio is max(AnioInicio, AnioNacimiento).
+
+conocio(Persona, AnioConocio, Hazana, Heroes, Lugar) :-
+    persona(Persona, _, AnioNacimiento, Pueblo),
+    estatua(Pueblo, _, _, AnioConstruccion, Hazana, Heroes, Lugar),
+    AnioConocio is max(AnioConstruccion, AnioNacimiento).
+
+
+recuerda(Persona, Hazana, Anio) :-
+    persona(Persona, _, _, Pueblo),
+    diaFestivo(Pueblo, Hazana, _, _, AnioInicio),
+    Anio >= AnioInicio,
+    vivo(Persona, Anio).
+
+recuerda(Persona, Hazana, Anio) :-
+    persona(Persona, _, _, Pueblo),
+    estatua(Pueblo, NombreEstatua, _, _, Hazana, _, _),
+    buenEstado(NombreEstatua, Anio).
+
