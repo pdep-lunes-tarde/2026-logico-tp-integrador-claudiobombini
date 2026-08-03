@@ -1,5 +1,3 @@
-
-
 persona(denken, humano, 1290, auberst).
 persona(voll, enano, 1200, ende).
 persona(serie, elfa, 500, weise).
@@ -71,6 +69,14 @@ pasoAlOlvido(Hazana, Anio) :-
 
 :- begin_tests(tpIntegrador, []).
 
+%punto 1
+test(kanne_viva_1370) :- vivo(kanne, 1370).
+test(kanne_no_viva_1300, [fail]) :- vivo(kanne, 1300).
+test(kanne_no_viva_2000, [fail]) :- vivo(kanne, 2000).
+test(voll_vivo_1550) :- vivo(voll, 1550).
+test(voll_no_vivo_1551, [fail]) :- vivo(voll, 1551).
+test(serie_viva_5000) :- vivo(serie, 5000).
+%punto 2
 test(lawine_no_recuerda_1380, [fail]) :- recuerda(lawine, destruirDemonioAura, 1380).
 test(lawine_recuerda_1400) :- recuerda(lawine, destruirDemonioAura, 1400).
 test(lawine_no_recuerda_1410, [fail]) :- recuerda(lawine, destruirDemonioAura, 1410).
@@ -82,7 +88,7 @@ test(rescate_corroborada) :- hazanaCorroborada(rescatarHermanaWirbel).
 test(aura_no_corroborada, [fail]) :- hazanaCorroborada(destruirDemonioAura).
 test(aura_olvido_1460) :- pasoAlOlvido(destruirDemonioAura, 1460).
 test(aura_no_olvido_1440, [fail]) :- pasoAlOlvido(destruirDemonioAura, 1440).
-
+%punto 3
 test(lawine_recuerda_reydemonio_1400) :- recuerda(lawine, destruirReyDemonio, 1400).
 test(lawine_no_recuerda_reydemonio_1390, [fail]) :- recuerda(lawine, destruirReyDemonio, 1390).
 test(fern_recuerda_reydemonio_1400) :- recuerda(fern, destruirReyDemonio, 1400).
