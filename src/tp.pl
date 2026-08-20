@@ -96,7 +96,7 @@ recuerda(Persona, Hazana, Anio) :-
     persona(Persona, _, AnioNacimiento, Pueblo),
     conmemora(Pueblo, Hazana, _, _, AnioComienzo, Manera),
     AnioConocio is max(AnioComienzo, AnioNacimiento),
-    Anio >= AnioInicio,
+    Anio >= AnioConocio,
     vivo(Persona, Anio),
     vigente(Manera, AnioComienzo, Anio).
 
