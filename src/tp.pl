@@ -92,9 +92,68 @@ anioReferencia(Nombre, _, AnioMantenimiento) :- %cualquier anio donde hubo un ma
 buenEstado(Nombre, Anio) :-
     conmemora(_, _, _, _, AnioConstruccion, estatua(Material, Nombre)),
     limiteAntiguedad(Material, Limite),
-    anioReferencia(Nombre, AnioConstruccion, AnioReferencia), 
+    anioReferencia(Nombre, AnioConstruccion, AnioReferencia),
     AnioReferencia =< Anio,
     Anio =< AnioReferencia + Limite. %si un anioReferencia no cumple, entra a la clausula nuevamente en caso de tener uno/otro mantenimiento
+
+%punto 4
+
+recuerdaMedio(Persona, Hazana, Anio, Medio) :-
+    conocio(Persona, AnioConocio, Hazana, _, _, Medio),
+    Anio >= AnioConocio,
+    vivo(Persona, Anio),
+    enMemoria(Medio, AnioConocio, Anio).
+
+seRecuerdaEnPueblo(Pueblo, Hazana, Anio) :-
+    persona(Persona, _, _, Pueblo),
+    recuerda(Persona, Hazana, Anio).
+
+hazanasDelPueblo(Pueblo, Anio, Hazanas) :-
+    findall(Hazana, (persona(Persona, _, _, Pueblo), recuerda(Persona, Hazana, Anio)), HazanasConRepetidos),
+    list_to_set(HazanasConRepetidos, Hazanas).
+
+paginasLeidasEnPueblo(Pueblo, Anio, Total) :-
+    findall(Paginas, (persona(Persona, _, _, Pueblo), conocio(Persona, Anio, _, _, _, leyo(Paginas))), ListaPaginas),
+    sum_list(ListaPaginas, Total).
+
+puebloMasLector(Pueblo, Anio) :-
+    persona(_, _, _, Pueblo),
+    paginasLeidasEnPueblo(Pueblo, Anio, Total),
+    not((persona(_, _, _, OtroPueblo),
+         OtroPueblo \= Pueblo,
+         paginasLeidasEnPueblo(OtroPueblo, Anio, OtroTotal),
+         OtroTotal > Total)).
+
+hazanaRecordadaPorCancion(Pueblo, Hazana, Anio) :-
+    persona(Persona, _, _, Pueblo),
+    recuerdaMedio(Persona, Hazana, Anio, escucho).
+
+puebloMusical(Pueblo, Anio) :-
+    hazanasDelPueblo(Pueblo, Anio, Hazanas),
+    Hazanas \= [],
+    findall(Hazana, (member(Hazana, Hazanas), hazanaRecordadaPorCancion(Pueblo, Hazana, Anio)), HazanasPorCancion),
+    length(Hazanas, TotalHazanas),
+    length(HazanasPorCancion, TotalCanciones),
+    TotalCanciones * 2 > TotalHazanas.
+
+puebloChismoso(Pueblo, Anio) :-
+    hazanasDelPueblo(Pueblo, Anio, Hazanas),
+    Hazanas \= [],
+    forall(member(Hazana, Hazanas), not(hazanaCorroborada(Hazana))).
+
+hazanaImportante(Hazana, Pueblo, Anio) :-
+    findall(Persona, (persona(Persona, _, _, Pueblo), vivo(Persona, Anio)), Habitantes),
+    Habitantes \= [],
+    forall(member(Persona, Habitantes), recuerda(Persona, Hazana, Anio)).
+
+huboPresencial(Pueblo, Hazana) :-
+    persona(Persona, _, _, Pueblo),
+    conocio(Persona, _, Hazana, _, _, presencio).
+
+puebloTiemposSinPrecedentes(Pueblo, Anio) :-
+    hazanasDelPueblo(Pueblo, Anio, Hazanas),
+    findall(Hazana, (member(Hazana, Hazanas), hazanaImportante(Hazana, Pueblo, Anio)), Importantes),
+    forall(member(Hazana, Importantes), huboPresencial(Pueblo, Hazana)).
 
 :- begin_tests(tpIntegrador, []).
 
@@ -121,5 +180,20 @@ test("Una hazana no paso al olvido si alguien todavia la recuerda ese anio", [fa
 test("Una persona recuerda una hazana conmemorada con una estatua en buen estado") :- recuerda(lawine, destruirReyDemonio, 1400).
 test("Una persona no recuerda una hazana conmemorada con una estatua en mal estado", [fail]) :- recuerda(lawine, destruirReyDemonio, 1390).
 test("Una persona recuerda una hazana conmemorada con un dia festivo") :- recuerda(fern, destruirReyDemonio, 1400).
+%punto 4
+test("En un pueblo se recuerda una hazana si al menos un habitante la recuerda") :- seRecuerdaEnPueblo(weise, destruirReyDemonio, 1400).
+test("En un pueblo se recuerda una hazana presenciada por un habitante") :- seRecuerdaEnPueblo(klares, rescatarHermanaWirbel, 1395).
+test("En un pueblo no se recuerda una hazana que ningun habitante recuerda", [fail]) :- seRecuerdaEnPueblo(klares, destruirReyDemonio, 1395).
+test("En un pueblo se cuentan las paginas leidas por sus habitantes en un anio") :- paginasLeidasEnPueblo(weise, 1335, 100).
+test("En un pueblo no se leyeron paginas en un anio en que nadie leyo") :- paginasLeidasEnPueblo(weise, 1336, 0).
+test("El pueblo mas lector es el que mas paginas leyo en ese anio") :- puebloMasLector(ende, 1400).
+test("Un pueblo es musical si la mayoria de sus hazanas recordadas se conocen por canciones") :- puebloMusical(auberst, 1395).
+test("Un pueblo no es musical si la mayoria de sus hazanas recordadas no se conocen por canciones", [fail]) :- puebloMusical(weise, 1400).
+test("Un pueblo es chismoso si ninguna hazana que recuerda esta corroborada") :- puebloChismoso(ende, 1420).
+test("Un pueblo no es chismoso si alguna hazana que recuerda esta corroborada", [fail]) :- puebloChismoso(weise, 1400).
+test("Una hazana es importante para un pueblo si todos sus habitantes vivos la recuerdan") :- hazanaImportante(destruirReyDemonio, weise, 1400).
+test("Una hazana no es importante para un pueblo si no todos sus habitantes vivos la recuerdan", [fail]) :- hazanaImportante(recuperarGatoPerdido, weise, 1400).
+test("Un pueblo vive tiempos sin precedentes si sus hazanas importantes fueron presenciadas por algun habitante") :- puebloTiemposSinPrecedentes(klares, 1395).
+test("Un pueblo no vive tiempos sin precedentes si alguna hazana importante no fue presenciada por ningun habitante", [fail]) :- puebloTiemposSinPrecedentes(weise, 1400).
 
 :- end_tests(tpIntegrador).
