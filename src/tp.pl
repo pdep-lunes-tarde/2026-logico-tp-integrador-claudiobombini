@@ -35,6 +35,10 @@ conocio(lawine, 1393, destruirDemonioAura, [frieren], weise, escucho).
 conocio(voll, 1400, destruirDemonioAura, [denken], auberst, leyo(50)).
 conocio(serie, 1335, destruirReyDemonio, [frieren, himmel, heiter, eisen], ende, leyo(100)).
 
+conocio(Persona, AnioConocio, Hazana, Heroes, Lugar, Manera) :-
+    persona(Persona, _, AnioNacimiento, Pueblo),
+    conmemora(Pueblo, Hazana, Heroes, Lugar, AnioComienzo, Manera),
+    AnioConocio is max(AnioComienzo, AnioNacimiento).
 
 recuerda(Persona, Hazana, Anio) :-
     conocio(Persona, AnioConocio, Hazana, _, _, Medio),
@@ -49,6 +53,11 @@ enMemoria(escucho, AnioConocio, Anio) :-
 
 enMemoria(leyo(Paginas), AnioConocio, Anio) :-
     Anio =< AnioConocio + Paginas.
+
+enMemoria(festivo, _, _).
+
+enMemoria(estatua(_, Nombre), _, Anio) :-
+    buenEstado(Nombre, Anio).
 
 dosVersionesDistintas(Hazana) :-
     conocio(_, _, Hazana, Heroes1, Lugar1, _),
@@ -73,57 +82,44 @@ mantenimiento(equipoDeHeroes, 1400).
 mantenimiento(equipoDeHeroes, 1450).
 mantenimiento(heroeDelSur, 1410).
 
-vigente(festivo, _, _).
-vigente(estatua(Material, Nombre), AnioConstruccion, Anio) :-
-    buenEstado(Material, Nombre, AnioConstruccion, Anio).
+limiteAntiguedad(marmol, 30).
+limiteAntiguedad(bronce, 15).
 
-buenEstado(marmol, _, AnioConstruccion, Anio) :-
-    Anio =< AnioConstruccion + 30.
-buenEstado(marmol, Nombre, _, Anio) :-
-    tuvoMantenimiento(Nombre, Anio).
+anioReferencia(_, AnioConstruccion, AnioConstruccion). %el anio de construccion 
+anioReferencia(Nombre, _, AnioMantenimiento) :- %cualquier anio donde hubo un mantenimiento
+    mantenimiento(Nombre, AnioMantenimiento).
 
-buenEstado(bronce, _, AnioConstruccion, Anio) :-
-    Anio =< AnioConstruccion + 15.
-buenEstado(bronce, Nombre, _, Anio) :-
-    tuvoMantenimiento(Nombre, Anio).
-
-tuvoMantenimiento(Nombre, Anio) :-
-    mantenimiento(Nombre, AnioMantenimiento),
-    AnioMantenimiento =< Anio.
-
-
-recuerda(Persona, Hazana, Anio) :-
-    persona(Persona, _, AnioNacimiento, Pueblo),
-    conmemora(Pueblo, Hazana, _, _, AnioComienzo, Manera),
-    AnioConocio is max(AnioComienzo, AnioNacimiento),
-    Anio >= AnioConocio,
-    vivo(Persona, Anio),
-    vigente(Manera, AnioComienzo, Anio).
+buenEstado(Nombre, Anio) :-
+    conmemora(_, _, _, _, AnioConstruccion, estatua(Material, Nombre)),
+    limiteAntiguedad(Material, Limite),
+    anioReferencia(Nombre, AnioConstruccion, AnioReferencia), 
+    AnioReferencia =< Anio,
+    Anio =< AnioReferencia + Limite. %si un anioReferencia no cumple, entra a la clausula nuevamente en caso de tener uno/otro mantenimiento
 
 :- begin_tests(tpIntegrador, []).
 
 %punto 1
-test(vivo_dentro_del_promedio_de_vida) :- vivo(kanne, 1370).
-test(no_vivo_antes_de_nacer, [fail]) :- vivo(kanne, 1300).
-test(no_vivo_luego_de_superar_promedio_de_vida, [fail]) :- vivo(kanne, 2000).
-test(vivo_justo_en_el_limite_del_promedio_de_vida) :- vivo(voll, 1550).
-test(no_vivo_pasado_el_limite_del_promedio_de_vida, [fail]) :- vivo(voll, 1551).
-test(elfo_vivo_por_ser_inmortal) :- vivo(serie, 5000).
+test("Una persona esta viva si no paso mas que su promedio de vida") :- vivo(kanne, 1370).
+test("Una persona no esta viva si aun no nacio", [fail]) :- vivo(kanne, 1300).
+test("Una persona no esta viva si paso su promedio de vida", [fail]) :- vivo(kanne, 2000).
+test("Una persona esta viva justo en el limite de su promedio de vida") :- vivo(voll, 1550).
+test("Una persona no esta viva pasado el limite de su promedio de vida", [fail]) :- vivo(voll, 1551).
+test("Un elfo esta vivo sin importar el anio por ser inmortal") :- vivo(serie, 5000).
 %punto 2
-test(no_recuerda_hazana_antes_de_escuchar_la_cancion, [fail]) :- recuerda(lawine, destruirDemonioAura, 1380).
-test(recuerda_hazana_escuchada_dentro_de_los_15_anios) :- recuerda(lawine, destruirDemonioAura, 1400).
-test(no_recuerda_hazana_escuchada_luego_de_15_anios, [fail]) :- recuerda(lawine, destruirDemonioAura, 1410).
-test(recuerda_hazana_leida_justo_en_el_limite_de_paginas) :- recuerda(voll, destruirDemonioAura, 1450).
-test(no_recuerda_hazana_leida_pasado_el_limite_de_paginas, [fail]) :- recuerda(voll, destruirDemonioAura, 1460).
-test(recuerda_hazana_presenciada_mientras_esta_vivo) :- recuerda(wirbel, rescatarHermanaWirbel, 1430).
-test(no_recuerda_hazana_presenciada_si_ya_no_esta_vivo, [fail]) :- recuerda(wirbel, rescatarHermanaWirbel, 1440).
-test(hazana_corroborada_cuando_todas_las_versiones_coinciden) :- hazanaCorroborada(rescatarHermanaWirbel).
-test(hazana_no_corroborada_cuando_hay_versiones_distintas, [fail]) :- hazanaCorroborada(destruirDemonioAura).
-test(hazana_paso_al_olvido_si_nadie_la_recuerda) :- pasoAlOlvido(destruirDemonioAura, 1460).
-test(hazana_no_paso_al_olvido_si_alguien_la_recuerda, [fail]) :- pasoAlOlvido(destruirDemonioAura, 1440).
+test("Una persona no recuerda una hazana antes de conocerla", [fail]) :- recuerda(lawine, destruirDemonioAura, 1380).
+test("Una persona recuerda una hazana escuchada dentro de los 15 anios de conocerla") :- recuerda(lawine, destruirDemonioAura, 1400).
+test("Una persona no recuerda una hazana escuchada luego de 15 anios de conocerla", [fail]) :- recuerda(lawine, destruirDemonioAura, 1410).
+test("Una persona recuerda una hazana leida mientras no pasen mas anios que paginas tiene el libro") :- recuerda(voll, destruirDemonioAura, 1450).
+test("Una persona no recuerda una hazana leida si pasaron mas anios que paginas tiene el libro", [fail]) :- recuerda(voll, destruirDemonioAura, 1460).
+test("Una persona recuerda una hazana presenciada mientras siga viva") :- recuerda(wirbel, rescatarHermanaWirbel, 1430).
+test("Una persona no recuerda una hazana presenciada si ya no esta viva", [fail]) :- recuerda(wirbel, rescatarHermanaWirbel, 1440).
+test("Una hazana esta corroborada si todas las versiones conocidas coinciden") :- hazanaCorroborada(rescatarHermanaWirbel).
+test("Una hazana no esta corroborada si hay versiones con distintos heroes o lugar", [fail]) :- hazanaCorroborada(destruirDemonioAura).
+test("Una hazana paso al olvido si nadie la recuerda ese anio") :- pasoAlOlvido(destruirDemonioAura, 1460).
+test("Una hazana no paso al olvido si alguien todavia la recuerda ese anio", [fail]) :- pasoAlOlvido(destruirDemonioAura, 1440).
 %punto 3
-test(recuerda_hazana_por_estatua_en_buen_estado) :- recuerda(lawine, destruirReyDemonio, 1400).
-test(no_recuerda_hazana_por_estatua_en_mal_estado, [fail]) :- recuerda(lawine, destruirReyDemonio, 1390).
-test(recuerda_hazana_por_dia_festivo) :- recuerda(fern, destruirReyDemonio, 1400).
+test("Una persona recuerda una hazana conmemorada con una estatua en buen estado") :- recuerda(lawine, destruirReyDemonio, 1400).
+test("Una persona no recuerda una hazana conmemorada con una estatua en mal estado", [fail]) :- recuerda(lawine, destruirReyDemonio, 1390).
+test("Una persona recuerda una hazana conmemorada con un dia festivo") :- recuerda(fern, destruirReyDemonio, 1400).
 
 :- end_tests(tpIntegrador).
