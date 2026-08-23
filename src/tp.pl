@@ -96,6 +96,8 @@ buenEstado(Nombre, Anio) :-
     AnioReferencia =< Anio,
     Anio =< AnioReferencia + Limite. %si un anioReferencia no cumple, entra a la clausula nuevamente en caso de tener uno/otro mantenimiento
 
+%PARTE 2:
+
 %punto 4
 
 recuerdaMedio(Persona, Hazana, Anio, Medio) :-
@@ -155,6 +157,30 @@ puebloTiemposSinPrecedentes(Pueblo, Anio) :-
     findall(Hazana, (member(Hazana, Hazanas), hazanaImportante(Hazana, Pueblo, Anio)), Importantes),
     forall(member(Hazana, Importantes), huboPresencial(Pueblo, Hazana)).
 
+
+%Punto 5:
+
+heroe(Persona) :-
+    conocio(_, _, _, Heroes, _, _),
+    member(Persona, Heroes). %pregunta si la persona esta en la lista de heroes de las hazanas que se conocieron
+
+inspiro(Persona, Heroe) :-
+    conocio(Heroe, _, _, Heroes, _, _),
+    member(Persona, Heroes).
+
+cadenaDeInspiracion([Origen, Otro]) :-
+    inspiro(Origen, Otro). %si es directa osea 2 elementos
+
+cadenaDeInspiracion([Origen, Siguiente | Resto]) :-
+    inspiro(Origen, Siguiente), %el primero inspiro al siguiente
+    cadenaDeInspiracion([Siguiente | Resto]), 
+    not(member(Origen, [Siguiente | Resto])). %para evitar que se repitan personas
+
+
+
+
+
+
 :- begin_tests(tpIntegrador, []).
 
 %punto 1
@@ -195,5 +221,14 @@ test("Una hazana es importante para un pueblo si todos sus habitantes vivos la r
 test("Una hazana no es importante para un pueblo si no todos sus habitantes vivos la recuerdan", [fail]) :- hazanaImportante(recuperarGatoPerdido, weise, 1400).
 test("Un pueblo vive tiempos sin precedentes si sus hazanas importantes fueron presenciadas por algun habitante") :- puebloTiemposSinPrecedentes(klares, 1395).
 test("Un pueblo no vive tiempos sin precedentes si alguna hazana importante no fue presenciada por ningun habitante", [fail]) :- puebloTiemposSinPrecedentes(weise, 1400).
+%punto 5
+test("Alguien es un heroe si participo en alguna hazana conocida") :- heroe(frieren).
+test("Alguien no es un heroe si nunca participo en una hazana conocida", [fail]) :- heroe(wirbel).
+test("Alguien inspiro a un heroe si participo en una hazana que el heroe conocio") :- inspiro(frieren, fern).
+test("Alguien inspiro a un heroe si participo en otra hazana que el heroe conocio") :- inspiro(stark, frieren).
+test("Nadie inspiro a un heroe que no conoce ninguna hazana", [fail]) :- inspiro(_, eisen).
+test("Una cadena de inspiracion es valida si cada persona inspiro a la siguiente sin repetirse") :- cadenaDeInspiracion([himmel, fern, frieren, denken]).
+test("Una cadena de inspiracion no es valida si uno no inspiro al otro", [fail]) :- cadenaDeInspiracion([denken, frieren]).
+test("Una cadena de inspiracion no es valida si algun heroe se repite", [fail]) :- cadenaDeInspiracion([frieren, fern, frieren]).
 
 :- end_tests(tpIntegrador).
