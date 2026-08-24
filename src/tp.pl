@@ -190,12 +190,16 @@ sinRepetidos([X|Xs]) :- %caso recursivo, pide recursivamente que X no este en el
     not(member(X, Xs)),
     sinRepetidos(Xs).
 
+puedeIntegrarEquipo(Heroe, Heroe). %el heroe puede integrar su propio equipo
+puedeIntegrarEquipo(Antecesor, Heroe) :- %un antecesor puede integrar el equipo de su heroe
+    esAntecesorDe(Antecesor, Heroe).
+
 equipoDeSuenios(Heroe, Equipo) :-
     heroe(Heroe),
     sinRepetidos(Equipo), 
     length(Equipo, Largo), Largo >= 2, %minimo 2 personas en el equipo
     member(Heroe, Equipo), %el heroe debe estar en el equipo
-    forall(member(Miembro, Equipo), (Miembro == Heroe ; esAntecesorDe(Miembro, Heroe))). %para cada miembro del equipo, debe ser el heroe o un antecesor de el
+    forall(member(Miembro, Equipo), puedeIntegrarEquipo(Miembro, Heroe)). %para cada miembro del equipo, debe ser el heroe o un antecesor de el
 
 
 :- begin_tests(tpIntegrador, []).
