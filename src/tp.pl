@@ -111,10 +111,12 @@ seRecuerdaEnPueblo(Pueblo, Hazana, Anio) :-
     recuerda(Persona, Hazana, Anio).
 
 hazanasDelPueblo(Pueblo, Anio, Hazanas) :-
+    persona(_, _, _, Pueblo),
     findall(Hazana, (persona(Persona, _, _, Pueblo), recuerda(Persona, Hazana, Anio)), HazanasConRepetidos),
     list_to_set(HazanasConRepetidos, Hazanas).
 
 paginasLeidasEnPueblo(Pueblo, Anio, Total) :-
+    persona(_, _, _, Pueblo),
     findall(Paginas, (persona(Persona, _, _, Pueblo), conocio(Persona, Anio, _, _, _, leyo(Paginas))), ListaPaginas),
     sum_list(ListaPaginas, Total).
 
@@ -144,6 +146,7 @@ puebloChismoso(Pueblo, Anio) :-
     forall(member(Hazana, Hazanas), not(hazanaCorroborada(Hazana))).
 
 hazanaImportante(Hazana, Pueblo, Anio) :-
+    seRecuerdaEnPueblo(Pueblo, Hazana, _),
     findall(Persona, (persona(Persona, _, _, Pueblo), vivo(Persona, Anio)), Habitantes),
     Habitantes \= [],
     forall(member(Persona, Habitantes), recuerda(Persona, Hazana, Anio)).
@@ -164,17 +167,21 @@ heroe(Persona) :-
     conocio(_, _, _, Heroes, _, _),
     member(Persona, Heroes). %pregunta si la persona esta en la lista de heroes de las hazanas que se conocieron
 
-inspiro(Persona, Heroe) :-
+inspiro(Inspirador, Heroe) :-
     conocio(Heroe, _, _, Heroes, _, _),
-    member(Persona, Heroes).
+    heroe(Heroe),
+    member(Inspirador, Heroes).
+
+%INSPIROINDIRECTO!!!
 
 cadenaDeInspiracion([Origen, Otro]) :-
     inspiro(Origen, Otro). %si es directa osea 2 elementos
 
 cadenaDeInspiracion([Origen, Siguiente | Resto]) :-
+    %INVERSIBILIDAD!!!
+    not(member(Origen, [Siguiente | Resto])),
     inspiro(Origen, Siguiente), %el primero inspiro al siguiente
-    cadenaDeInspiracion([Siguiente | Resto]), 
-    not(member(Origen, [Siguiente | Resto])). %para evitar que se repitan personas
+    cadenaDeInspiracion([Siguiente | Resto]). %para evitar que se repitan personas
 
 
 % Punto 6
@@ -196,6 +203,7 @@ puedeIntegrarEquipo(Antecesor, Heroe) :- %un antecesor puede integrar el equipo 
 
 equipoDeSuenios(Heroe, Equipo) :-
     heroe(Heroe),
+    %LISTADEHEROES generador para que sea inversible equipo!!!
     sinRepetidos(Equipo), 
     length(Equipo, Largo), Largo >= 2, %minimo 2 personas en el equipo
     member(Heroe, Equipo), %el heroe debe estar en el equipo
