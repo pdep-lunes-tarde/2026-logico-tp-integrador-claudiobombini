@@ -177,8 +177,25 @@ cadenaDeInspiracion([Origen, Siguiente | Resto]) :-
     not(member(Origen, [Siguiente | Resto])). %para evitar que se repitan personas
 
 
+% Punto 6
 
+esAntecesorDe(Antecesor, Heroe) :- %caso base, si Antecesor inspiro directamente a Heroe es antecesor
+    inspiro(Antecesor, Heroe). 
+esAntecesorDe(Antecesor, Heroe) :- %caso recursivo, si Antecesor inspiro a un "intermedio" y ese "intermedio" inspiro a Heroe, entonces Antecesor es antecesor de Heroe
+    inspiro(Antecesor, Intermedio),
+    esAntecesorDe(Intermedio, Heroe).
 
+sinRepetidos([]). %caso base, la lista vacia no tiene repetidos
+sinRepetidos([X|Xs]) :- %caso recursivo, pide recursivamente que X no este en el resto de la lista. 
+    not(member(X, Xs)),
+    sinRepetidos(Xs).
+
+equipoDeSuenios(Heroe, Equipo) :-
+    heroe(Heroe),
+    sinRepetidos(Equipo), 
+    length(Equipo, Largo), Largo >= 2, %minimo 2 personas en el equipo
+    member(Heroe, Equipo), %el heroe debe estar en el equipo
+    forall(member(Miembro, Equipo), (Miembro == Heroe ; esAntecesorDe(Miembro, Heroe))). %para cada miembro del equipo, debe ser el heroe o un antecesor de el
 
 
 :- begin_tests(tpIntegrador, []).
@@ -230,5 +247,10 @@ test("Nadie inspiro a un heroe que no conoce ninguna hazana", [fail]) :- inspiro
 test("Una cadena de inspiracion es valida si cada persona inspiro a la siguiente sin repetirse") :- cadenaDeInspiracion([himmel, fern, frieren, denken]).
 test("Una cadena de inspiracion no es valida si uno no inspiro al otro", [fail]) :- cadenaDeInspiracion([denken, frieren]).
 test("Una cadena de inspiracion no es valida si algun heroe se repite", [fail]) :- cadenaDeInspiracion([frieren, fern, frieren]).
+%punto 6
+test("Un equipo de los suenios es valido si incluye al heroe y a quien lo inspiro") :- equipoDeSuenios(frieren, [frieren, stark]).
+test("El orden de los integrantes del equipo no afecta su validez") :- equipoDeSuenios(frieren, [stark, frieren]).
+test("Un heroe solo no es un equipo de los suenios valido porque no incluye ningun antecesor", [fail]) :- equipoDeSuenios(frieren, [frieren]).
+test("Un antecesor solo no es un equipo de los suenios valido porque no incluye al heroe", [fail]) :- equipoDeSuenios(frieren, [stark]).
 
 :- end_tests(tpIntegrador).
