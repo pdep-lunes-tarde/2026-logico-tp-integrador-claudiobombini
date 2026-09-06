@@ -1,9 +1,9 @@
 # TP Integrador
 
 ## Integrantes
-
-**Equipo:** 
-
+Juan Ignacio Villa, Bruno Adaniya, Juan Ignacio Gonsalbes, Francisco Baquero Flores
+Equipo: claudiobombini
+ 
 ## Fecha de entrega de parte 1
 
 3 de agosto.
