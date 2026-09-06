@@ -146,7 +146,7 @@ puebloChismoso(Pueblo, Anio) :-
     forall(member(Hazana, Hazanas), not(hazanaCorroborada(Hazana))).
 
 hazanaImportante(Hazana, Pueblo, Anio) :-
-    seRecuerdaEnPueblo(Pueblo, Hazana, _),
+    seRecuerdaEnPueblo(Pueblo, Hazana, Anio),
     findall(Persona, (persona(Persona, _, _, Pueblo), vivo(Persona, Anio)), Habitantes),
     Habitantes \= [],
     forall(member(Persona, Habitantes), recuerda(Persona, Hazana, Anio)).
@@ -164,51 +164,57 @@ puebloTiemposSinPrecedentes(Pueblo, Anio) :-
 %Punto 5:
 
 heroe(Persona) :-
-    conocio(_, _, _, Heroes, _, _),
-    member(Persona, Heroes). %pregunta si la persona esta en la lista de heroes de las hazanas que se conocieron
+    findall(H, (conocio(_, _, _, Heroes, _, _), member(H, Heroes)), HeroesConRepetidos),
+    list_to_set(HeroesConRepetidos, TodosLosHeroes),
+    member(Persona, TodosLosHeroes). %pregunta si la persona esta en la lista de heroes de las hazanas que se conocieron
 
 inspiro(Inspirador, Heroe) :-
     conocio(Heroe, _, _, Heroes, _, _),
     heroe(Heroe),
-    member(Inspirador, Heroes).
-
-%INSPIROINDIRECTO!!!
+    member(Inspirador, Heroes),
+    Inspirador \= Heroe.
 
 cadenaDeInspiracion([Origen, Otro]) :-
     inspiro(Origen, Otro). %si es directa osea 2 elementos
 
 cadenaDeInspiracion([Origen, Siguiente | Resto]) :-
-    %INVERSIBILIDAD!!!
-    not(member(Origen, [Siguiente | Resto])),
-    inspiro(Origen, Siguiente), %el primero inspiro al siguiente
-    cadenaDeInspiracion([Siguiente | Resto]). %para evitar que se repitan personas
+    inspiro(Origen, Siguiente),
+    cadenaDeInspiracion([Siguiente | Resto]),
+    not(member(Origen, [Siguiente | Resto])).
 
 
 % Punto 6
 
-esAntecesorDe(Antecesor, Heroe) :- %caso base, si Antecesor inspiro directamente a Heroe es antecesor
-    inspiro(Antecesor, Heroe). 
-esAntecesorDe(Antecesor, Heroe) :- %caso recursivo, si Antecesor inspiro a un "intermedio" y ese "intermedio" inspiro a Heroe, entonces Antecesor es antecesor de Heroe
-    inspiro(Antecesor, Intermedio),
-    esAntecesorDe(Intermedio, Heroe).
+esAntecesorDe(Antecesor, Heroe) :- 
+    esAntecesorDeAux(Antecesor, Heroe, [Heroe]).
 
-sinRepetidos([]). %caso base, la lista vacia no tiene repetidos
-sinRepetidos([X|Xs]) :- %caso recursivo, pide recursivamente que X no este en el resto de la lista. 
-    not(member(X, Xs)),
-    sinRepetidos(Xs).
 
-puedeIntegrarEquipo(Heroe, Heroe). %el heroe puede integrar su propio equipo
-puedeIntegrarEquipo(Antecesor, Heroe) :- %un antecesor puede integrar el equipo de su heroe
-    esAntecesorDe(Antecesor, Heroe).
+esAntecesorDeAux(Antecesor, ActualHeroe, Visitados) :-
+    inspiro(Antecesor, ActualHeroe),
+    not(member(Antecesor, Visitados)).
+
+esAntecesorDeAux(Antecesor, ActualHeroe, Visitados) :-
+    inspiro(Intermedio, ActualHeroe),
+    not(member(Intermedio, Visitados)),
+    esAntecesorDeAux(Antecesor, Intermedio, [Intermedio | Visitados]).
+
+listaDeHeroes(Heroe, Posibles) :-
+    findall(Antecesor, esAntecesorDe(Antecesor, Heroe), Antecesores),
+    list_to_set([Heroe | Antecesores], Posibles).
+
+subconjunto([], []).
+subconjunto([X|Xs], [X|Ys]) :- subconjunto(Xs, Ys).
+subconjunto([_|Xs], Ys) :- subconjunto(Xs, Ys). 
+%subconjunto sirve para generar subconjuntos sin permutar de mas.
 
 equipoDeSuenios(Heroe, Equipo) :-
     heroe(Heroe),
-    %LISTADEHEROES generador para que sea inversible equipo!!!
-    sinRepetidos(Equipo), 
-    length(Equipo, Largo), Largo >= 2, %minimo 2 personas en el equipo
-    member(Heroe, Equipo), %el heroe debe estar en el equipo
-    forall(member(Miembro, Equipo), puedeIntegrarEquipo(Miembro, Heroe)). %para cada miembro del equipo, debe ser el heroe o un antecesor de el
-
+    listaDeHeroes(Heroe, Posibles),
+    subconjunto(Posibles, Subconjunto),
+    length(Subconjunto, Largo), 
+    Largo >= 2, %minimo 2 personas en el equipo
+    member(Heroe, Subconjunto), %el heroe debe estar en el equipo
+    permutation(Subconjunto, Equipo). %reordena la lista de posibles integrantes de todas las formas posibles (con backtracking). (sugerido por IA)
 
 :- begin_tests(tpIntegrador, []).
 
